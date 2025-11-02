@@ -1,0 +1,90 @@
+﻿@page "/register"
+
+@using ComplicadaMente.Components.Models
+@using ComplicadaMente.Services
+@inject UserService _userService;
+@rendermode InteractiveServer 
+<h3 class="text-center mb-4">Register New Client</h3>
+
+<EditForm Model="@_newClient" OnValidSubmit="HandleValidSubmit" FormName="RegisterForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <!-- Name Field -->
+            <div class="form-group">
+                <label for="nome">Full Name:</label>
+                <input id="nome" @bind="_newClient.Nome" class="form-control" placeholder="Enter full name" />
+                <ValidationMessage For="@(() => _newClient.Nome)" />
+            </div>
+
+            <!-- Email Field -->
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input id="email" @bind="_newClient.Email" class="form-control" placeholder="Enter email address" />
+                <ValidationMessage For="@(() => _newClient.Email)" />
+            </div>
+
+            <!-- Phone Field -->
+            <div class="form-group">
+                <label for="telefone">Phone Number:</label>
+                <input id="telefone" @bind="_newClient.Telefone" class="form-control" placeholder="Enter phone number" />
+                <ValidationMessage For="@(() => _newClient.Telefone)" />
+            </div>
+
+            <!-- Address Field -->
+            <div class="form-group">
+                <label for="morada">Address:</label>
+                <input id="morada" @bind="_newClient.Morada" class="form-control" placeholder="Enter address" />
+                <ValidationMessage For="@(() => _newClient.Morada)" />
+            </div>
+
+            <!-- Password Field -->
+            <div class="form-group">
+                <label for="passe">Password:</label>
+                <input id="passe" @bind="_newClient.Passe" class="form-control" type="password" placeholder="Enter password" />
+                <ValidationMessage For="@(() => _newClient.Passe)" />
+            </div>
+
+            <!-- Submit Button -->
+            <div class="form-group text-center">
+                <button type="submit"  class="btn btn-primary w-100">Register</button>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+<!-- Feedback Message -->
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-info mt-4" role="alert">
+        @_message
+    </div>
+}
+
+@code {
+    private Cliente _newClient = new Cliente();
+    private string _message = string.Empty;
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            Console.WriteLine($"Nome: {_newClient.Nome}, Email: {_newClient.Email}, Telefone: {_newClient.Telefone}, Morada: {_newClient.Morada}, Passe: {_newClient.Passe}");
+
+            await _userService.CreateClienteAsync(_newClient);
+
+            _message = "Client successfully registered!";
+            Console.WriteLine($"Registered new client: {_newClient.Nome}");
+
+            // Reset form
+            _newClient = new Cliente();
+        }
+        catch (Exception ex)
+        {
+            _message = $"Error registering the client: {ex.Message}";
+            Console.WriteLine($"Error occurred while saving client: {ex.Message}");
+        }
+    }
+}

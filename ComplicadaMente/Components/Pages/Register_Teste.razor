@@ -1,0 +1,45 @@
+﻿@page "/register-test"
+
+<h3>Test Register Form</h3>
+
+<EditForm Model="@_testClient" OnValidSubmit="TestSubmit" FormName="RegisterTestForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label for="name">Name:</label>
+        <InputText id="name" @bind-Value="_testClient.Name" />
+    </div>
+
+    <div>
+        <label for="email">Email:</label>
+        <InputText id="email" @bind-Value="_testClient.Email" />
+    </div>
+
+    <button type="submit">Submit</button>
+</EditForm>
+
+<p>@_message</p>
+
+@code {
+    private TestClient _testClient = new TestClient();
+    private string _message = string.Empty;
+
+    private void TestSubmit()
+    {
+        Console.WriteLine($"Name: {_testClient.Name}, Email: {_testClient.Email}");
+
+        // Hardcoded test values
+        _testClient.Name = "Hardcoded Name";
+        _testClient.Email = "hardcoded@example.com";
+
+        Console.WriteLine($"Hardcoded values - Name: {_testClient.Name}, Email: {_testClient.Email}");
+        _message = "Form submitted with hardcoded values!";
+    }
+
+    private class TestClient
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+    }
+}

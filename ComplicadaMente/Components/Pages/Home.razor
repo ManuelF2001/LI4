@@ -1,0 +1,66 @@
+﻿@page "/"
+@using ComplicadaMente.Components.Data
+@using ComplicadaMente.Services
+@using Microsoft.EntityFrameworkCore
+@using ComplicadaMente.Components.Models
+@inject AppDbContext DbContext
+@inject ShoppingCartService _cartservice;
+<h1>Bem vindo á Complicada Mente</h1>
+@rendermode InteractiveServer
+
+<h3>Puzzles</h3>
+<div style="display: flex; flex-wrap: wrap;">
+    @if (puzzles == null || !puzzles.Any())
+    {
+        <div>Loading...</div>
+    }
+    else
+    {
+        @foreach (var puzzle in puzzles)
+        {
+            <div style="margin: 10px; border: 1px solid #ccc; padding: 10px; width: 200px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <p>@puzzle.Nome</p>
+                    <img src="@puzzle.ImagePath" alt="@puzzle.Nome" style="width:100%; height:auto;" @onclick="() => SelectPuzzle(puzzle)" />
+                </div>
+                <button style="margin-top: 10px;" @onclick="() => AddToCart(puzzle)">Add to Cart</button>
+            </div>
+        }
+    }
+</div>
+
+@if (selectedPuzzle != null)
+{
+    <h3>Selected Puzzle</h3>
+    <p>Name: @selectedPuzzle.Nome</p>
+    <p>Price: @selectedPuzzle.Preco</p>
+    <img src="@selectedPuzzle.ImagePath" alt="@selectedPuzzle.Nome" style="width:200px; height:auto;" />
+}
+
+
+
+@code {
+    private List<Puzzle> puzzles;
+    private Puzzle selectedPuzzle;
+    private List<string> pecas = new List<string>
+    {
+        "Peça 1", "Peça 2", "Peça 3"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Fetch puzzles from the database
+        puzzles = await DbContext.Puzzle.ToListAsync();
+    }
+
+    private void SelectPuzzle(Puzzle puzzle)
+    {
+        selectedPuzzle = puzzle;
+    }
+
+    private void AddToCart(Puzzle puzzle)
+    {
+        _cartservice.AddToCart(puzzle);
+        InvokeAsync(StateHasChanged);
+    }
+}

@@ -1,0 +1,134 @@
+@page "/cart"
+@using ComplicadaMente.Components.Models
+@using ComplicadaMente.StateManagement
+@inject ComplicadaMente.Services.ShoppingCartService ShoppingCartService
+@rendermode InteractiveServer
+@inject EncomendaService _encomendaService
+@inject LocalStorageService _localService
+
+<h3>Order Summary</h3>
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger text-center">@errorMessage</div>
+}
+
+@if (cartItems.Count == 0)
+{
+    <p>Your cart is empty.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total</th>
+                <th>Image</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in groupedCartItems)
+            {
+                <tr>
+                    <td>@item.Puzzle.Nome</td>
+                    <td>@item.Quantity</td>
+                    <td>@item.Puzzle.Preco.ToString("C")</td>
+                    <td>@((item.Puzzle.Preco * item.Quantity).ToString("C"))</td>
+                    <td><img src="@item.Puzzle.ImagePath" alt="@item.Puzzle.Nome" width="50" height="50" /></td>
+                    <td><button class="btn btn-danger" @onclick="() => RemoveItem(item.Puzzle)">Remove</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div class="d-flex justify-content-between align-items-center">
+        <h4>Total: @totalPrice.ToString("C")</h4>
+        <button class="btn btn-primary" @onclick="ConfirmOrder">Confirm Order</button>
+    </div>
+}
+
+@code {
+    string errorMessage = string.Empty;
+    private List<Puzzle> cartItems = new();
+    private List<GroupedCartItem> groupedCartItems = new();
+    private decimal totalPrice;
+
+    protected override void OnInitialized()
+    {
+        ShoppingCartService.OnChange += HandleStateChange;
+        LoadCart();
+    }
+
+    public void Dispose()
+    {
+        ShoppingCartService.OnChange -= HandleStateChange;
+    }
+
+    private void HandleStateChange()
+    {
+        // Ensure the state change is invoked on the UI thread
+        InvokeAsync(() =>
+        {
+            LoadCart();
+            StateHasChanged();
+        });
+    }
+
+    private void LoadCart()
+    {
+        cartItems = ShoppingCartService.GetCartItems();
+        groupedCartItems = cartItems
+            .GroupBy(p => p.ID_Puzzle)
+            .Select(g => new GroupedCartItem
+                {
+                    Puzzle = g.First(),
+                    Quantity = g.Count()
+                }).ToList();
+        totalPrice = groupedCartItems.Sum(item => item.Puzzle.Preco * item.Quantity);
+    }
+
+    private async void ConfirmOrder()
+    {
+        var user = await _localService.GetLoginUser();
+        if (user != null)
+        {
+            var encomando = new Encomenda()
+                {
+                    ID_Cliente = user.ID_Cliente,
+                    Data_Encomenda = DateTime.Now,
+                    Status = "Pending",
+                    Preco_Total = totalPrice
+                };
+            var encmandoResult = await _encomendaService.AddEncomendaAsync(encomando);
+            foreach (var groupItem in groupedCartItems)
+            {
+                var encomandPuzzle = new EncomendaPuzzle()
+                    {
+                        ID_Encomenda = encmandoResult.ID_Encomenda,
+                        Puzzle = groupItem.Puzzle,
+                        Quantidade = groupItem.Quantity,
+                    };
+                await _encomendaService.AddEncomendaPuzzleAsync(encomandPuzzle);
+            }
+
+            ShoppingCartService.ClearCart();
+        }
+        else {
+            errorMessage = "Please login to confirm the order";
+            StateHasChanged();
+        }
+    }
+
+    private void RemoveItem(Puzzle puzzle)
+    {
+        ShoppingCartService.RemoveFromCart(puzzle);
+    }
+
+    private class GroupedCartItem
+    {
+        public Puzzle Puzzle { get; set; }
+        public int Quantity { get; set; }
+    }
+}

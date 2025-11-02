@@ -1,0 +1,83 @@
+﻿@page "/orders"
+@using ComplicadaMente.Components.Models
+@using ComplicadaMente.Services
+@using ComplicadaMente.StateManagement
+@rendermode InteractiveServer
+@inject EncomendaService EncomendaService
+@inject LocalStorageService localService
+
+<h3>Orders</h3>
+@if (Encomendas == null)
+{
+    <p>Loading ........</p>
+}
+else if (!Encomendas.Any())
+{
+    <p>No orders found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Order Date</th>
+                <th>Status</th>
+                <th>Total Price</th>
+                <th>Client ID</th>
+                <th>Employee ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var encomenda in Encomendas)
+            {
+                <tr>
+                    <td>@encomenda.ID_Encomenda</td>
+                    <td>@encomenda.Data_Encomenda.ToString("yyyy-MM-dd")</td>
+                    <td>@encomenda.Status</td>
+                    <td>@encomenda.Preco_Total.ToString("C")</td>
+                    <td>@encomenda.ID_Cliente</td>
+                    <td>@encomenda.ID_Funcionario</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h3>Order Puzzles</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Puzzle ID</th>
+                <th>Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var encomenda in Encomendas)
+            {
+                @foreach (var item in encomenda.EncomendaPuzzle)
+                {
+                    <tr>
+                        <td>@item.ID_Encomenda</td>
+                        <td>@item.ID_Puzzle</td>
+                        <td>@item.Quantidade</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    public List<Encomenda> Encomendas { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var user = await localService.GetLoginUser();
+            Encomendas = await EncomendaService.GetEncomendaByUserIdAsync(user.ID_Cliente);
+            StateHasChanged();
+        }
+    }
+}

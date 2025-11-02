@@ -1,0 +1,74 @@
+﻿@page "/login"
+@using ComplicadaMente.Services
+@using ComplicadaMente.StateManagement
+@using System.Text.Json
+@inject UserService _userService
+@inject NavigationManager navigationManager
+@inject LocalStorageService localstorage
+@rendermode InteractiveServer
+
+<h3 class="text-center mb-4">Login</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger text-center">@errorMessage</div>
+}
+
+<EditForm Model="user" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <!-- Email Field -->
+                <div class="form-group">
+                    <label for="email" class="form-label">Email:</label>
+                    <InputText id="email" class="form-control" @bind-Value="user.Email" placeholder="Enter your email" />
+                </div>
+
+                <!-- Password Field -->
+                <div class="form-group">
+                    <label for="password" class="form-label">Password:</label>
+                    <InputText id="password" class="form-control" @bind-Value="user.Password" type="password" placeholder="Enter your password" />
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-group text-center">
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </div>
+
+                <!-- Registration Link -->
+                <div class="form-group text-center mt-3">
+                    <p>Don't have an account? <NavLink href="/register">Register here</NavLink></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private User user = new();
+    private string errorMessage = string.Empty;
+
+    private async Task HandleLogin()
+    {
+        var loginUser = await _userService.Login(user.Email, user.Password);
+        if (loginUser != null)
+        {
+            await localstorage.SetItemAsync("LoginUser", JsonSerializer.Serialize(loginUser));
+            StateHasChanged();
+            navigationManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Invalid email or password.";
+        }
+    }
+
+    public class User
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

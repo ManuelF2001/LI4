@@ -1,0 +1,94 @@
+﻿@using ComplicadaMente.Components.Models
+@using ComplicadaMente.Services
+@using ComplicadaMente.StateManagement
+@inject LocalStorageService localstorage;
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+@inject ShoppingCartService _cartService;
+<nav>
+    <ul class="nav-menu">
+        <li><NavLink href="/" class="nav-link" Match="NavLinkMatch.All">Home</NavLink></li>
+
+        @if (loginUser == null)
+        {
+            <li><NavLink href="/login" class="nav-link">Login</NavLink></li>
+            <li><NavLink href="/register" class="nav-link">Register</NavLink></li>
+        }
+
+        <li><NavLink href="/about" class="nav-link">About</NavLink></li>
+        <li><NavLink href="/cart" class="nav-link">Cart <span class="cart-icon">🛒</span> <span class="cart-count">@cartCount</span></NavLink></li>
+
+        @if (loginUser != null)
+        {
+            <li>
+                <NavLink href="/orders" class="nav-link">My Orders <span class="orders-icon">📦</span></NavLink>
+            </li>
+            <li>
+                <NavLink style="cursor:pointer" class="nav-link" @onclick="HandleLogout">Logout</NavLink>
+            </li>
+            <li>
+                <label> @loginUser.Nome</label>
+            </li>
+        }
+    </ul>
+</nav>
+
+@code{
+    private Cliente loginUser =  null;
+    private int cartCount = 0;
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            loginUser = await localstorage.GetLoginUser();
+            //   cartCount = await localstorage.GetCartCount();
+            cartCount = _cartService.GetCartItems().Count;
+            StateHasChanged();
+            _cartService.OnChange += OnCartValueChange;
+            localstorage.OnChange += OnLoginLogout;
+
+
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    public async void OnCartValueChange(){
+        cartCount = _cartService.GetCartItems().Count;   
+        await InvokeAsync(StateHasChanged);
+    }
+    private async void HandleLogout()
+    {
+        await localstorage.RemoveItemAsync("LoginUser");
+ 
+        NavigationManager.NavigateTo("/login");
+    }
+    private async void OnLoginLogout(){
+        loginUser = await localstorage.GetLoginUser();
+        await InvokeAsync(StateHasChanged);
+    }
+}
+
+<style>
+    .nav-menu {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: row; /* Horizontal layout */
+    }
+
+    .nav-menu li {
+        margin: 0 10px;
+    }
+
+    .cart-icon {
+        font-size: 1.2em;
+        margin-left: 5px;
+    }
+
+    .cart-count {
+        font-size: 1em;
+        margin-left: 5px;
+        color: red;
+    }
+</style>
